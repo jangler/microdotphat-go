@@ -1,8 +1,6 @@
 package microdotphat
 
 import (
-	"log"
-
 	"periph.io/x/conn/v3/i2c"
 	"periph.io/x/conn/v3/i2c/i2creg"
 	"periph.io/x/host/v3"
@@ -20,7 +18,7 @@ const (
 
 	// I2C command codes
 	cmdMatrix1    = 0x01
-	cmdMode       = 0x09
+	cmdMode       = 0x00
 	cmdUpdate     = 0x0C
 	cmdOpts       = 0x0D
 	cmdMatrix2    = 0x0E
