@@ -8,17 +8,17 @@ import (
 
 const (
 	// Width is the width of the display in pixels.
-	Width = 30
+	Width = 45
 
 	// Height is the height of the display in pixels.
 	Height = 7
 
-	// width of an individual display matrix
-	matrixWidth = 5
+	// width of an individual display matrix in pixels
+	matrixWidth = 8
 
 	// I2C command codes
-	cmdMatrix1    = 0x01
 	cmdMode       = 0x00
+	cmdMatrix1    = 0x01
 	cmdUpdate     = 0x0C
 	cmdOpts       = 0x0D
 	cmdMatrix2    = 0x0E
@@ -43,6 +43,7 @@ var (
 	addrs = []uint16{0x63, 0x62, 0x61}
 )
 
+// called on import
 func init() {
 	for x := range buf {
 		buf[x] = make([]bool, Height)
@@ -99,14 +100,80 @@ func Clear() {
 	scrollX, scrollY = 0, 0
 }
 
+// DrawTiny draws tiny numbers to the buffer. Display is the zero-based index
+// of the display to draw numbers on; s is a string containing only digits.
+// Panics if the display index is out of range. Non-digit characters are
+// ignored.
+func DrawTiny(display int, s string) {
+	// TODO
+	panic("DrawTiny NYI")
+}
+
+// Fill fills the buffer either lit or unlit.
+func Fill(lit bool) {
+	for x := range buf {
+		for y := range buf[x] {
+			buf[x][y] = lit
+		}
+	}
+}
+
+// Scroll scrolls the buffer.
+func Scroll(dx, dy int) {
+	// TODO
+	panic("Scroll NYI")
+}
+
+// ScrollTo scrolls the buffer to a specific position.
+func ScrollTo(x, y int) {
+	// TODO
+	panic("ScrollTo NYI")
+}
+
+// SetBrightness sets the display brightness in the range [0.0, 1.0].
+func SetBrightness(brightness float64) {
+	// TODO
+	panic("SetBrightness NYI")
+}
+
+// SetCol sets a whole column of the buffer (only useful when not scrolling
+// vertically). The 7 least significant bits of col correspond to each row of
+// the column.
+func SetCol(x int, col byte) {
+	// TODO
+	panic("SetCol NYI")
+}
+
+// SetDecimal sets the state of a decimal point on a zero-indexed display.
+// Panics if the display index is out of range.
+func SetDecimal(display int, lit bool) {
+	// TODO
+	panic("SetDecimal NYI")
+}
+
+// SetMirror sets whether the display should be flipped horizontally.
+func SetMirror(mirror bool) {
+	// TODO
+	panic("SetMirror NYI")
+}
+
 // SetPixel sets the buffer pixel at (x,y) to lit or unlit.
-// Panics if (x,y) is outside the bounds of the buffer.
 func SetPixel(x, y int, lit bool) {
+	// TODO grow buffer automatically
 	buf[x][y] = lit
+}
+
+// SetRotate sets whether the display should be rotated 180 degrees.
+func SetRotate180(rotate bool) {
+	// TODO
+	panic("SetRotate180 NYI")
 }
 
 // Show outputs the buffer to the display.
 func Show() error {
+	// TODO scrolling
+	// TODO decimal points
+
 	// update matrix buffers
 	for _, matrix := range matrices {
 		for y := range matrix {
@@ -138,6 +205,7 @@ func Show() error {
 	return nil
 }
 
+// helper function for Show
 func setMatrixPixel(x, y int) {
 	i := x / matrixWidth
 	if i % 2 == 0 {
@@ -145,4 +213,18 @@ func setMatrixPixel(x, y int) {
 	} else {
 		matrices[i][x % matrixWidth] |= (1 << y)
 	}
+}
+
+// WriteChar writes a single character to the buffer at the specified position.
+func WriteChar(char rune, x, y int) {
+	// TODO
+	panic("WriteChar NYI")
+}
+
+// WriteString writes a string to the buffer at the specified position. If kern
+// is true, characters will be written closely together, ideal for scrolling
+// displays. If kern is false, characters are arranged one per display.
+func WriteString(s string, x, y int, kern bool) {
+	// TODO
+	panic("WriteString NYI")
 }
