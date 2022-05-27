@@ -5,12 +5,18 @@ based on that of the official microdotphat Python library, and features an
 automatically resized scrollable on/off pixel buffer and built-in text drawing
 capabilities.
 
+See the `examples/` directory for usage examples.
+
+## Status
+
+Breaking changes to the package may occur at any time until version `v1.0.0`.
+
 ## Quick links
 
-- Original Python package <https://github.com/pimoroni/microdot-phat>
+- Original Python package: <https://github.com/pimoroni/microdot-phat>
 - API documentation: <https://pkg.go.dev/github.com/jangler/microdotphat-go>
 
-## Differences from the Python microdotphat package
+## Known differences from the Python microdotphat package
 
 - The Python package clears the display at program exit by default
   (configurable via `set_clear_on_exit`); this package does not. If you want
