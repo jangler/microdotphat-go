@@ -7,6 +7,7 @@
 package microdotphat
 
 import (
+	"errors"
 	"strings"
 
 	"periph.io/x/conn/v3/i2c"
@@ -39,6 +40,8 @@ const (
 )
 
 var (
+	ErrNoConn = errors.New("I2C bus connection not open")
+
 	// display buffer vars
 	buf      = make([][]bool, Width)
 	scrollX  int
@@ -48,7 +51,7 @@ var (
 	mirrorX  bool
 	mirrorY  bool
 
-	// used only for testing
+	// used only for debugging
 	brightness_ byte
 	runeBuf     = make([][]rune, Width)
 
@@ -96,10 +99,10 @@ func Open(name string) error {
 
 // Close closes the connection to the I2C bus.
 func Close() error {
-	if bus != nil {
-		return bus.Close()
+	if bus == nil {
+		return ErrNoConn
 	}
-	return nil
+	return bus.Close()
 }
 
 // Clear clears the buffer and resets its bounds and scroll state.
@@ -152,21 +155,26 @@ func Fill(lit bool) {
 
 // Scroll scrolls the buffer.
 func Scroll(dx, dy int) {
-	scrollX = (scrollX + dx) % len(buf)
-	scrollY = (scrollY + dy) % len(buf[0])
+	scrollX = posMod(scrollX+dx, len(buf))
+	scrollY = posMod(scrollY+dy, len(buf[0]))
 }
 
 // ScrollTo scrolls the buffer to a specific position.
 func ScrollTo(x, y int) {
-	scrollX = x % len(buf)
-	scrollY = y % len(buf[0])
+	scrollX = posMod(x, len(buf))
+	scrollY = posMod(y, len(buf[0]))
 }
 
 // SetBrightness sets the display brightness in the range [0.0, 1.0].
 func SetBrightness(brightness float64) error {
+	if brightness > 1 {
+		brightness = 1
+	} else if brightness < 0 {
+		brightness = 0
+	}
 	brightness_ = byte(brightness * 127)
-	if brightness_ > 127 {
-		brightness_ = 127
+	if bus == nil {
+		return ErrNoConn
 	}
 	for _, addr := range addrs {
 		if err := bus.Tx(addr, []byte{cmdBrightness, brightness_}, nil); err != nil {
@@ -178,7 +186,7 @@ func SetBrightness(brightness float64) error {
 
 // SetCol sets a whole column of the buffer (only useful when not scrolling
 // vertically). The 7 least significant bits of col correspond to each row of
-// the column.
+// the column, with the least significant bit on top.
 func SetCol(x int, col byte) {
 	for y := 0; y < Height; y++ {
 		SetPixel(x, y, col&(1<<y) > 0)
@@ -204,7 +212,7 @@ func SetPixel(x, y int, lit bool) {
 	}
 	if y >= len(buf[0]) {
 		for x := range buf {
-			buf[x] = append(buf[x], make([]bool, len(buf[x])-(y+1))...)
+			buf[x] = append(buf[x], make([]bool, len(buf[x])-(y-1))...)
 		}
 	}
 	buf[x][y] = lit
@@ -215,6 +223,9 @@ func Show() error {
 	updateMatrices()
 
 	// send matrix buffers and update commands
+	if bus == nil {
+		return ErrNoConn
+	}
 	for i, addr := range addrs {
 		if err := bus.Tx(addr,
 			append([]byte{cmdMatrix1}, matrices[i*2+1]...), nil); err != nil {
@@ -242,7 +253,11 @@ func updateMatrices() {
 	}
 	for x := range runeBuf {
 		for y := range runeBuf[x] {
-			runeBuf[x][y] = ' '
+			if (y < Height && x%matrixWidth < 5) || x%matrixWidth == 0 {
+				runeBuf[x][y] = '.'
+			} else {
+				runeBuf[x][y] = ' '
+			}
 		}
 	}
 
@@ -264,7 +279,7 @@ func updateMatrices() {
 			} else {
 				matrices[i][7] |= 0b01000000
 			}
-			runeBuf[i*matrixWidth][7] = '*'
+			runeBuf[i*matrixWidth][7] = '#'
 		}
 	}
 }
@@ -272,14 +287,14 @@ func updateMatrices() {
 // helper function for updateMatrices; translates matrix coordinates to buffer
 // coordinates based on current display vars
 func translateCoords(x, y int) (int, int) {
-	x = (x + scrollX) % len(buf)
-	y = (y + scrollY) % len(buf[0])
 	if mirrorX {
-		x = Width - x
+		x = (Width - 1) - x
 	}
 	if mirrorY {
-		y = Height - y
+		y = (Height - 1) - y
 	}
+	x = posMod(x+scrollX, len(buf))
+	y = posMod(y+scrollY, len(buf[0]))
 	return x, y
 }
 
@@ -295,7 +310,9 @@ func setMatrixPixel(x, y int) {
 	} else {
 		matrices[i][x%matrixWidth] |= (1 << y)
 	}
-	runeBuf[x][y] = '*'
+	if x%matrixWidth < 5 {
+		runeBuf[x][y] = '#'
+	}
 }
 
 // String returns a string representing the expected LED display state.
@@ -305,7 +322,7 @@ func String() string {
 		for x := range runeBuf {
 			b.WriteRune(runeBuf[x][y])
 		}
-		if y < len(runeBuf[0]) - 1 {
+		if y < len(runeBuf[0])-1 {
 			b.WriteRune('\n')
 		}
 	}
@@ -341,4 +358,13 @@ func WriteString(s string, x, y int, kern bool) {
 			x += matrixWidth
 		}
 	}
+}
+
+// helper function; modulo that always returns a positive result
+func posMod(val, mod int) int {
+	val = val % mod
+	if val < 0 {
+		val += mod
+	}
+	return val
 }
