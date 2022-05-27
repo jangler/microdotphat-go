@@ -1,7 +1,7 @@
-// Package microdotphat implements an interface to the Micro Dot pHAT LED
-// matrix display board. The API is based on that of the official microdotphat
-// Python library, and features an automatically resized scrollable on/off
-// pixel buffer and built-in text drawing capabilities.
+// Package microdotphat implements a pure Go interface to the Micro Dot pHAT
+// LED matrix display board. The API is based on that of the official
+// microdotphat Python library, and features an automatically resized
+// scrollable on/off pixel buffer and built-in text drawing capabilities.
 //
 // Passing negative coordinates to any function will cause a panic.
 package microdotphat
